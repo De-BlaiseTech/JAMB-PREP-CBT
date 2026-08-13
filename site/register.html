@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration</title>
+
+  <!-- PWA Manifest & Mobile Theme -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2e682b">
+
+  <!-- Direct Root CSS Reference -->
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body class="auth-body">
+  <main class="auth-card">
+    <div class="brand-hero">
+      <span>🎓</span>
+      <h1>Register Account</h1>
+      <p>Start your practice journey today</p>
+    </div>
+    
+    <div>
+      <div class="field">
+        <label for="name">Full Name</label>
+        <input id="name" type="text" placeholder="John Doe" required>
+      </div>
+      <div class="field">
+        <label for="regno">JAMB Reg Number (Optional)</label>
+        <input id="regno" type="text" placeholder="202612345678AB">
+      </div>
+      <div class="field">
+        <label for="email">Email Address</label>
+        <input id="email" type="email" placeholder="student@example.com" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="••••••••" required>
+      </div>
+      
+      <button id="create" type="button" class="btn primary full">Register Account</button>
+      <button id="backToLogin" type="button" class="btn link full">Already registered? Sign In</button><p class="tiny muted" style="text-align:center;margin-top:12px">A verification link will be sent to your email. Email verification is recommended, but it is not required to use practice tests.</p>
+      
+      <p id="msg" class="status-msg"></p>
+    </div>
+  </main>
+
+  <!-- Direct Root JS Reference -->
+  <script type="module" src="js/register.js"></script>
+<footer class="site-footer">© 2026 De-Blaise Technologies. All rights reserved.</footer></body>
+</html>

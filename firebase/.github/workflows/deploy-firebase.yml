@@ -1,0 +1,49 @@
+name: Deploy Firebase backend
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "firebase/**"
+      - ".github/workflows/deploy-firebase.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firebase
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: firebase/functions/package-lock.json
+
+      - name: Install function dependencies
+        run: npm ci
+        working-directory: firebase/functions
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Write Firebase service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          test -n "$FIREBASE_SERVICE_ACCOUNT"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > firebase-service-account.json
+
+      - name: Deploy Functions and Firestore
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase/firebase-service-account.json
+        run: firebase deploy --only functions,firestore --project jamb-prep-cbt --non-interactive
+
+      - name: Remove service account file
+        if: always()
+        run: rm -f firebase-service-account.json

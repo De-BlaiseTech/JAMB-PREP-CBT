@@ -1,0 +1,9 @@
+{
+  "name": "JAMB Prep CBT - Student Practice",
+  "short_name": "JAMB Prep",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f8f5",
+  "theme_color": "#246b35",
+  "icons": []
+}
