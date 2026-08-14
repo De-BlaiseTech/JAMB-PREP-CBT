@@ -30,7 +30,7 @@ jobs:
         working-directory: firebase/function
         run: npm install
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate with Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
         with:
@@ -40,18 +40,17 @@ jobs:
           export_environment_variables: true
 
       - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      - name: Verify Google authentication
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
-        run: |
-          echo "Credentials file:"
-          echo "$GOOGLE_APPLICATION_CREDENTIALS"
-          test -f "$GOOGLE_APPLICATION_CREDENTIALS"
+        run: npm install -g firebase-tools@latest
 
       - name: Deploy Firebase backend
         working-directory: firebase
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
-        run: firebase deploy --project jamb-prep-cbt --force
+          GOOGLE_CLOUD_PROJECT: jamb-prep-cbt
+          GCLOUD_PROJECT: jamb-prep-cbt
+        run: |
+          # Ensure Firebase CLI uses ADC without interactive login conflicts
+          firebase logout --non-interactive || true
+          
+          # Run the deployment
+          firebase deploy --project jamb-prep-cbt --force --debug
