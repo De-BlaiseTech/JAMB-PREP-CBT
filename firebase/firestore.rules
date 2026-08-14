@@ -13,7 +13,11 @@ service cloud.firestore {
 
       match /results/{resultId} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if false;
+        allow create: if isOwner(uid)
+          && request.resource.data.id == resultId
+          && request.resource.data.total is number
+          && request.resource.data.score is number;
+        allow update, delete: if false;
       }
 
       match /examSessions/{examId} {
@@ -21,17 +25,18 @@ service cloud.firestore {
       }
     }
 
-    // Questions and answer keys are server-only. Students receive sanitized
-    // question data through the startExam callable function.
+    // Practice questions are readable by signed-in students.
+    // The question documents contain the answer index, so this direct-client
+    // architecture is intended for practice use rather than high-stakes exams.
     match /questions/{id} {
-      allow read, write: if false;
+      allow read: if signedIn() && resource.data.active == true;
+      allow write: if false;
     }
 
     match /answerKeys/{id} {
       allow read, write: if false;
     }
 
-    // Server-only rate limiting records.
     match /rateLimits/{id} {
       allow read, write: if false;
     }
