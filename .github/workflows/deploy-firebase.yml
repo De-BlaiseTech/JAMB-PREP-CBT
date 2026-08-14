@@ -9,10 +9,6 @@ on:
       - ".github/workflows/deploy-firebase.yml"
   workflow_dispatch:
 
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -30,38 +26,12 @@ jobs:
         working-directory: firebase/function
         run: npm install
 
-      - name: Authenticate with Google
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: projects/519735246364/locations/global/workloadIdentityPools/github-actions/providers/github-actions
-          service_account: github-firebase-deploy@jamb-prep-cbt.iam.gserviceaccount.com
-          create_credentials_file: true
-          export_environment_variables: true
-
-      - name: Check authentication
-        run: |
-          echo "Google credentials:"
-          echo "$GOOGLE_APPLICATION_CREDENTIALS"
-
-          if [ ! -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-            echo "Credentials file was not created."
-            exit 1
-          fi
-
-          echo "Credentials file exists."
-
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@latest
-
-      - name: Check Firebase CLI
-        run: firebase --version
 
       - name: Deploy Firebase backend
         working-directory: firebase
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
-          GOOGLE_CLOUD_PROJECT: jamb-prep-cbt
-          GCLOUD_PROJECT: jamb-prep-cbt
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          firebase deploy --only functions --project jamb-prep-cbt --force --debug
+          firebase deploy --project jamb-prep-cbt --force --debug
