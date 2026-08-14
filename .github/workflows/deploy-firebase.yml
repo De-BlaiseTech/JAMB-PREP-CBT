@@ -64,4 +64,4 @@ jobs:
           GOOGLE_CLOUD_PROJECT: jamb-prep-cbt
           GCLOUD_PROJECT: jamb-prep-cbt
         run: |
-          firebase deploy --project jamb-prep-cbt --force --debug
+          firebase deploy --only functions --project jamb-prep-cbt --force --debug
