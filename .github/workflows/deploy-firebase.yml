@@ -27,7 +27,7 @@ jobs:
           node-version: 24
 
       - name: Install Functions dependencies
-        working-directory: firebase/functions
+        working-directory: firebase/function
         run: npm install
 
       - name: Authenticate to Google Cloud
