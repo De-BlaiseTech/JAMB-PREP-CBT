@@ -44,7 +44,7 @@ $('login').onclick=async()=>{
     if(!user.emailVerified){
       try{ await fb.signOut?.(); }catch(_){}
       setBusy(button,false);
-      return msg('Please verify your email address before signing in. Check your inbox for the verification link.','error');
+      return msg('Please verify your email address before signing in. If you have not received the link, return to registration and use Resend Verification Link.','error');
     }
     localStorage.setItem('jambUser',JSON.stringify({email:user.email,name:user.displayName||email.split('@')[0],uid:user.uid}));
     location.href='dashboard.html';
