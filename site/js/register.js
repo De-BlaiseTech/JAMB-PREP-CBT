@@ -33,7 +33,7 @@ createBtn.onclick=async()=>{
     await signOut(auth);
     createBtn.disabled=false;createBtn.textContent="Register Account";
     msg.style.color="var(--success)";
-    msg.textContent="Account created. A verification link has been sent to your email. You can sign in now; email verification is recommended for account security.";
+    msg.textContent="Account created. A verification link has been sent to your email. Please verify your email before signing in.";
   }catch(err){
     createBtn.disabled=false;createBtn.textContent="Register Account";
     msg.textContent=friendlyError(err);

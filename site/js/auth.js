@@ -41,7 +41,12 @@ $('login').onclick=async()=>{
   if(!fb){setBusy(button,false);return msg('Online sign-in is unavailable here. Please check your connection.','error')}
   try{
     const user=await fb.signIn(email,password);
-        localStorage.setItem('jambUser',JSON.stringify({email:user.email,name:user.displayName||email.split('@')[0],uid:user.uid}));
+    if(!user.emailVerified){
+      try{ await fb.signOut?.(); }catch(_){}
+      setBusy(button,false);
+      return msg('Please verify your email address before signing in. Check your inbox for the verification link.','error');
+    }
+    localStorage.setItem('jambUser',JSON.stringify({email:user.email,name:user.displayName||email.split('@')[0],uid:user.uid}));
     location.href='dashboard.html';
   }catch(e){setBusy(button,false);msg(friendlyError(e),'error')}
 };
