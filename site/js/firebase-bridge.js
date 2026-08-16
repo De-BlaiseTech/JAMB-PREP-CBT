@@ -3,7 +3,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendEmailVerification,
-  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -38,10 +37,18 @@ export async function resendVerification(user) {
 }
 
 export async function sendReset(email) {
-  return sendPasswordResetEmail(auth, email, {
-    url: new URL("index.html", window.location.href).href,
-    handleCodeInApp: false
+  const response = await fetch('/api/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: String(email || '').trim().toLowerCase() })
   });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error || 'Unable to send the password reset email.');
+    error.code = 'custom/password-reset';
+    throw error;
+  }
+  return data;
 }
 
 export async function currentUser() {
