@@ -2,64 +2,110 @@ const { requireUser } = require('./_lib/firebaseAdmin');
 const { activateFromPayment } = require('./_lib/paymentAccess');
 
 function send(res, status, body) {
-  res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body));
-}
-
-function getReference(req) {
-  const body = req.body || {};
-  const query = req.query || {};
-  return String(body.reference || body.trxref || query.reference || query.trxref || '').trim();
+  res.status(status)
+    .setHeader('Content-Type', 'application/json')
+    .send(JSON.stringify(body));
 }
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') return send(res, 405, { error: 'Method not allowed.' });
+  if (req.method !== 'POST') {
+    return send(res, 405, { error: 'Method not allowed.' });
+  }
 
   try {
     const token = await requireUser(req);
-    const reference = getReference(req);
-    if (!reference) return send(res, 400, { error: 'Payment reference is missing.' });
+    const reference = String(req.body?.reference || '').trim();
 
-    const secret = String(process.env.PAYSTACK_SECRET_KEY || '').trim();
-    if (!secret) return send(res, 503, { error: 'Payment service is not configured yet.' });
+    if (!reference) {
+      return send(res, 400, { error: 'Payment reference is missing.' });
+    }
+
+    const secret = process.env.PAYSTACK_SECRET_KEY;
+    if (!secret) {
+      return send(res, 503, { error: 'Payment service is not configured yet.' });
+    }
 
     const response = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-      { headers: { Authorization: `Bearer ${secret}`, Accept: 'application/json' } }
+      {
+        headers: {
+          Authorization: `Bearer ${secret}`
+        }
+      }
     );
-    const payload = await response.json().catch(() => ({}));
 
-    if (!response.ok || payload.status !== true || payload.data?.status !== 'success') {
-      return send(res, 400, { error: payload.message || 'Payment could not be verified.' });
+    const payload = await response.json();
+    const payment = payload?.data || {};
+
+    // Temporary diagnostic response. This deliberately exposes only
+    // non-secret transaction fields needed to identify the mismatch.
+    if (!response.ok || !payload.status || payment.status !== 'success') {
+      return send(res, 400, {
+        error: 'Payment could not be verified.',
+        diagnostic: {
+          paystackHttpStatus: response.status,
+          paystackStatus: Boolean(payload.status),
+          transactionStatus: payment.status || null,
+          reference: payment.reference || reference
+        }
+      });
     }
 
-    const payment = payload.data;
-    const paidUid = String(payment.metadata?.uid || '').trim();
-    const paidEmail = String(payment.customer?.email || '').trim().toLowerCase();
-    const userEmail = String(token.email || '').trim().toLowerCase();
-
-    if (!paidUid) return send(res, 400, { error: 'The verified payment is missing the account identifier.' });
-    if (paidUid !== token.uid) return send(res, 403, { error: 'This payment belongs to another account.' });
-    if (paidEmail && userEmail && paidEmail !== userEmail) {
+    const paidUid = payment.metadata?.uid;
+    if (paidUid && paidUid !== token.uid) {
       return send(res, 403, { error: 'This payment belongs to another account.' });
     }
 
-    // Paystack amounts are in the smallest currency unit: ₦1,000 = 100000 kobo.
-    if (Number(payment.amount) !== 100000 || String(payment.currency || '').toUpperCase() !== 'NGN') {
-      return send(res, 400, { error: 'The payment amount could not be confirmed.' });
-    }
-    if (String(payment.metadata?.plan || '').toLowerCase() !== 'monthly') {
-      return send(res, 400, { error: 'The payment plan could not be confirmed.' });
+    if (
+      payment.customer?.email &&
+      payment.customer.email.toLowerCase() !== String(token.email || '').toLowerCase()
+    ) {
+      return send(res, 403, { error: 'This payment belongs to another account.' });
     }
 
-    const result = await activateFromPayment(payment, { expectedUid: token.uid });
+    const amount = Number(payment.amount);
+    const currency = String(payment.currency || '').trim().toUpperCase();
+
+    // DIAGNOSTIC: tell us exactly what Paystack returned instead of hiding
+    // the mismatch behind the generic "amount could not be confirmed" message.
+    if (amount !== 100000 || currency !== 'NGN') {
+      return send(res, 400, {
+        error: 'The payment amount could not be confirmed.',
+        diagnostic: {
+          expectedAmountMinorUnits: 100000,
+          receivedAmount: payment.amount ?? null,
+          receivedAmountAsNumber: Number.isFinite(amount) ? amount : null,
+          expectedCurrency: 'NGN',
+          receivedCurrency: payment.currency ?? null,
+          transactionStatus: payment.status || null,
+          reference: payment.reference || reference,
+          channel: payment.channel || null,
+          paidAt: payment.paid_at || null
+        }
+      });
+    }
+
+    if (payment.metadata?.plan !== 'monthly') {
+      return send(res, 400, {
+        error: 'The payment plan could not be confirmed.',
+        diagnostic: {
+          receivedPlan: payment.metadata?.plan ?? null,
+          expectedPlan: 'monthly',
+          reference: payment.reference || reference
+        }
+      });
+    }
+
+    const result = await activateFromPayment(payment);
+
     return send(res, 200, {
       success: true,
-      verified: true,
-      reference,
       expiresAt: result.expiresAt,
       alreadyProcessed: result.alreadyProcessed
     });
   } catch (e) {
-    return send(res, e.statusCode || 500, { error: e.message || 'Unable to verify payment.' });
+    return send(res, e.statusCode || 500, {
+      error: e.message || 'Unable to verify payment.'
+    });
   }
 };
