@@ -22,22 +22,15 @@ module.exports = async (req, res) => {
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
       { headers: { Authorization: `Bearer ${secret}` } }
     );
-    const payload = await response.json().catch(() => ({}));
-    const payment = payload?.data || {};
+    const payload = await response.json();
 
-    if (!response.ok || !payload.status || payment.status !== 'success') {
-      return send(res, 400, {
-        error: `Paystack verification failed. HTTP ${response.status}; transaction status: ${payment.status || 'unknown'}.`,
-        diagnostic: {
-          paystackHttpStatus: response.status,
-          paystackStatus: Boolean(payload.status),
-          transactionStatus: payment.status || null,
-          reference: payment.reference || reference
-        }
-      });
+    if (!response.ok || !payload.status || payload.data?.status !== 'success') {
+      return send(res, 400, { error: 'Payment could not be verified.' });
     }
 
-    const paidUid = payment.metadata?.uid;
+    const payment = payload.data;
+    const paidUid = String(payment.metadata?.uid || '').trim();
+
     if (paidUid && paidUid !== token.uid) {
       return send(res, 403, { error: 'This payment belongs to another account.' });
     }
@@ -49,43 +42,47 @@ module.exports = async (req, res) => {
       return send(res, 403, { error: 'This payment belongs to another account.' });
     }
 
-    const amount = Number(payment.amount);
-    const currency = String(payment.currency || '').trim().toUpperCase();
-
-    // Temporary diagnostic: make the actual Paystack values visible in the page message.
-    if (amount !== 100000 || currency !== 'NGN') {
+    if (payment.currency !== 'NGN') {
       return send(res, 400, {
-        error: `Amount mismatch: Paystack returned amount=${payment.amount ?? 'missing'}, currency=${payment.currency ?? 'missing'}. Expected amount=100000 (₦1,000) and currency=NGN. Reference=${payment.reference || reference}`,
-        diagnostic: {
-          expectedAmountMinorUnits: 100000,
-          receivedAmount: payment.amount ?? null,
-          receivedCurrency: payment.currency ?? null,
-          transactionStatus: payment.status || null,
-          reference: payment.reference || reference,
-          channel: payment.channel || null,
-          paidAt: payment.paid_at || null
-        }
+        error: `Unsupported payment currency: ${payment.currency || 'unknown'}.`
+      });
+    }
+
+    // Paystack may pass its processing fee to the customer.
+    // requested_amount is the product amount; amount is the gross amount
+    // actually charged to the customer.
+    const requestedAmount = Number(payment.requested_amount);
+    const chargedAmount = Number(payment.amount);
+
+    if (
+      requestedAmount !== 100000 ||
+      !Number.isFinite(chargedAmount) ||
+      chargedAmount < requestedAmount
+    ) {
+      return send(res, 400, {
+        error:
+          `Payment amount could not be confirmed. ` +
+          `Paystack returned requested_amount=${payment.requested_amount}, ` +
+          `amount=${payment.amount}, currency=${payment.currency}. ` +
+          `Expected requested_amount=100000 (₦1,000).`,
+        reference
       });
     }
 
     if (payment.metadata?.plan !== 'monthly') {
-      return send(res, 400, {
-        error: `Plan mismatch: Paystack returned plan=${payment.metadata?.plan ?? 'missing'}; expected monthly. Reference=${payment.reference || reference}`,
-        diagnostic: {
-          receivedPlan: payment.metadata?.plan ?? null,
-          expectedPlan: 'monthly',
-          reference: payment.reference || reference
-        }
-      });
+      return send(res, 400, { error: 'The payment plan could not be confirmed.' });
     }
 
     const result = await activateFromPayment(payment);
+
     return send(res, 200, {
       success: true,
       expiresAt: result.expiresAt,
       alreadyProcessed: result.alreadyProcessed
     });
   } catch (e) {
-    return send(res, e.statusCode || 500, { error: e.message || 'Unable to verify payment.' });
+    return send(res, e.statusCode || 500, {
+      error: e.message || 'Unable to verify payment.'
+    });
   }
 };

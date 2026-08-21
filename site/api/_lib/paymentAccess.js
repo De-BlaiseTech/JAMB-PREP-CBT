@@ -1,24 +1,10 @@
 const { db, getAdmin, nowMs } = require('./firebaseAdmin');
 
-const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
-
-function timestampToMs(value) {
-  if (value?.toMillis) return value.toMillis();
-  const n = Number(value || 0);
-  return Number.isFinite(n) ? n : 0;
-}
-
-async function activateFromPayment(payment, options = {}) {
+async function activateFromPayment(payment) {
   const reference = String(payment.reference || '').trim();
   const uid = String(payment.metadata?.uid || '').trim();
-  const expectedUid = String(options.expectedUid || '').trim();
 
   if (!reference || !uid) throw new Error('Payment information is incomplete.');
-  if (expectedUid && uid !== expectedUid) throw new Error('Payment account does not match the signed-in account.');
-  if (String(payment.status || '').toLowerCase() !== 'success') throw new Error('Payment is not successful.');
-  if (String(payment.currency || '').toUpperCase() !== 'NGN') throw new Error('Payment currency is invalid.');
-  if (Number(payment.amount) !== 100000) throw new Error('Payment amount is invalid.');
-  if (String(payment.metadata?.plan || '').toLowerCase() !== 'monthly') throw new Error('Payment plan is invalid.');
 
   const admin = getAdmin();
   const paymentRef = db().collection('payments').doc(reference);
@@ -29,8 +15,6 @@ async function activateFromPayment(payment, options = {}) {
 
     if (paymentSnap.exists) {
       const oldPayment = paymentSnap.data() || {};
-      const oldUid = String(oldPayment.uid || '').trim();
-      if (oldUid && oldUid !== uid) throw new Error('This payment reference is already linked to another account.');
       return {
         success: true,
         alreadyProcessed: true,
@@ -40,30 +24,46 @@ async function activateFromPayment(payment, options = {}) {
 
     const userSnap = await tx.get(userRef);
     const user = userSnap.exists ? userSnap.data() : {};
-    const oldExpiry = timestampToMs(user.subscriptionExpiresAt);
-    const start = Math.max(nowMs(), user.subscriptionStatus === 'active' ? oldExpiry : 0);
-    const expiry = start + MONTH_MS;
+
+    const oldExpiry = user.subscriptionExpiresAt?.toMillis
+      ? user.subscriptionExpiresAt.toMillis()
+      : Number(user.subscriptionExpiresAt || 0);
+
+    const start = Math.max(
+      nowMs(),
+      user.subscriptionStatus === 'active' ? oldExpiry : 0
+    );
+    const expiry = start + 30 * 24 * 60 * 60 * 1000;
+
+    const requestedAmount = Number(payment.requested_amount ?? payment.amount);
+    const chargedAmount = Number(payment.amount);
 
     tx.set(userRef, {
       subscriptionStatus: 'active',
       subscriptionExpiresAt: admin.firestore.Timestamp.fromMillis(expiry),
       lastPaymentReference: reference,
-      lastPaymentAmount: Number(payment.amount),
+      lastPaymentAmount: requestedAmount,
+      lastPaymentChargedAmount: chargedAmount,
       lastPaymentAt: new Date().toISOString(),
       plan: 'monthly'
     }, { merge: true });
 
-    tx.create(paymentRef, {
+    tx.set(paymentRef, {
       reference,
       uid,
-      amount: Number(payment.amount),
-      currency: String(payment.currency || 'NGN').toUpperCase(),
+      requestedAmount,
+      chargedAmount,
+      currency: payment.currency || 'NGN',
       status: 'success',
       expiresAt: expiry,
       processedAt: new Date().toISOString()
     });
 
-    return { success: true, alreadyProcessed: false, expiresAt: expiry };
+    return {
+      success: true,
+      alreadyProcessed: false,
+      expiresAt: expiry
+    };
   });
 }
 
