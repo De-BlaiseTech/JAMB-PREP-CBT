@@ -1,0 +1,49 @@
+const CACHE_NAME = 'jamb-prep-cbt-v14-pwa';
+const APP_SHELL = [
+  './',
+  './index.html',
+  './manifest.json',
+  './css/main.css',
+  './js/pwa.js'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(key => key !== CACHE_NAME)
+            .map(key => caches.delete(key))
+      )
+    ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || url.pathname.includes('/api/')) return;
+
+  // Network-first: published changes are picked up quickly; cached content
+  // is only used when the network is unavailable.
+  event.respondWith(
+    fetch(request, { cache: 'no-cache' })
+      .then(response => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
+        }
+        return response;
+      })
+      .catch(() => caches.match(request).then(cached => cached || caches.match('./index.html')))
+  );
+});
