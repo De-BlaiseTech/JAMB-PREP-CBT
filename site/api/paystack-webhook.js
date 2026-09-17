@@ -33,7 +33,9 @@ module.exports = async (req, res) => {
     if (
       String(payment.status || '').toLowerCase() !== 'success' ||
       String(payment.currency || '').toUpperCase() !== 'NGN' ||
+      !Number.isFinite(Number(payment.amount)) ||
       Number(payment.amount) !== 100000 ||
+      (payment.requested_amount != null && Number(payment.requested_amount) !== 100000) ||
       String(payment.metadata?.plan || '').toLowerCase() !== 'monthly' ||
       !payment.metadata?.uid ||
       !payment.reference

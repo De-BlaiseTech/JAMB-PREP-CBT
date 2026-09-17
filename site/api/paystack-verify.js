@@ -48,23 +48,20 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Paystack may pass its processing fee to the customer.
-    // requested_amount is the product amount; amount is the gross amount
-    // actually charged to the customer.
-    const requestedAmount = Number(payment.requested_amount);
+    // Customer charges are disabled in Paystack. The customer must therefore
+    // pay exactly the configured product amount. Never accept a higher gross
+    // amount as a valid payment for this product.
+    const expectedAmount = 100000; // ₦1,000 in kobo
     const chargedAmount = Number(payment.amount);
+    const requestedAmount = Number(payment.requested_amount ?? payment.amount);
 
     if (
-      requestedAmount !== 100000 ||
       !Number.isFinite(chargedAmount) ||
-      chargedAmount < requestedAmount
+      chargedAmount !== expectedAmount ||
+      (payment.requested_amount != null && requestedAmount !== expectedAmount)
     ) {
       return send(res, 400, {
-        error:
-          `Payment amount could not be confirmed. ` +
-          `Paystack returned requested_amount=${payment.requested_amount}, ` +
-          `amount=${payment.amount}, currency=${payment.currency}. ` +
-          `Expected requested_amount=100000 (₦1,000).`,
+        error: 'Payment amount could not be confirmed.',
         reference
       });
     }
