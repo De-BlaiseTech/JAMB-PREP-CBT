@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jamb-prep-cbt-v14-pwa';
+const CACHE_NAME = 'jamb-prep-cbt-v15-credit-subscriptions';
 const APP_SHELL = [
   './',
   './index.html',

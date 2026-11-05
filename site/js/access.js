@@ -20,6 +20,11 @@ async function callApi(path, options = {}) {
 }
 
 export const getMockAccess = () => callApi('/api/mock-access');
-export const reserveMockAccess = () => callApi('/api/mock-access', { method: 'POST', body: JSON.stringify({}) });
-export const initializePayment = () => callApi('/api/paystack-initialize', { method: 'POST', body: JSON.stringify({}) });
+export const initializePayment = planId => callApi('/api/paystack-initialize', { method: 'POST', body: JSON.stringify({ planId }) });
 export const verifyPayment = reference => callApi('/api/paystack-verify', { method: 'POST', body: JSON.stringify({ reference }) });
+export const startMock = examId => callApi('/api/start-mock', {
+  method: 'POST', body: JSON.stringify({ examId })
+});
+export const submitMock = (examId, result) => callApi('/api/submit-mock', {
+  method: 'POST', body: JSON.stringify({ examId, result })
+});

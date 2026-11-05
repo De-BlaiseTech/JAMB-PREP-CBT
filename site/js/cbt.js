@@ -272,6 +272,7 @@ async function submitExam(auto = false) {
     localStorage.setItem('lastResult', JSON.stringify(result));
     localStorage.removeItem('examSession');
     localStorage.removeItem('activeExamId');
+    localStorage.removeItem('activeMockAccess');
 
     location.href = 'result.html?attempt=' + encodeURIComponent(result.id);
   } catch (e) {
@@ -362,6 +363,7 @@ $('confirmSubmit').onclick = () => {
   if (expiresAt && Date.now() > expiresAt) {
     localStorage.removeItem('examSession');
     localStorage.removeItem('activeExamId');
+    localStorage.removeItem('activeMockAccess');
     location.replace('setup.html');
     return;
   }

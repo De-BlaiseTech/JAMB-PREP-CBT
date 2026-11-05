@@ -40,7 +40,8 @@ module.exports = async (req, res) => {
       email,
       role: 'student',
       createdAt: new Date().toISOString(),
-      emailVerified: true
+      emailVerified: true,
+      freePracticeUsed: false
     }, { merge: false });
     await ref.delete();
 

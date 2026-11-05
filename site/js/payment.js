@@ -31,7 +31,7 @@ function getPaymentReference() {
     const result = await access.verifyPayment(reference);
 
     title.textContent = 'Payment successful! 🎉';
-    message.textContent = `Your 30-day premium access is active until ${new Date(result.expiresAt).toLocaleDateString()}.`;
+    message.textContent = `Your subscription was credited successfully. ${result.creditsAdded || 0} practice credits have been added to your account.`;
     actions.append(button('Start Your Mock', 'setup.html'));
   } catch (e) {
     title.textContent = 'Payment could not be confirmed';

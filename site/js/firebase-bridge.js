@@ -183,8 +183,9 @@ export async function submitExam(examId, answers, questions, subjects) {
   if (!examId || !Array.isArray(questions) || !questions.length) throw new Error("This test session is no longer available.");
 
   const result = buildResult(examId, questions, answers, subjects || [...new Set(questions.map(q => q.subject))]);
-  await setDoc(doc(db, "users", u.uid, "results", examId), result);
-  return { result };
+  const access = await import('./access.js');
+  const saved = await access.submitMock(examId, result);
+  return { result: saved.result || result, credits: saved.credits };
 }
 
 export async function getAttempt(attemptId) {

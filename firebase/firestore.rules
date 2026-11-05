@@ -13,11 +13,7 @@ service cloud.firestore {
 
       match /results/{resultId} {
         allow read: if isOwner(uid);
-        allow create: if isOwner(uid)
-          && request.resource.data.id == resultId
-          && request.resource.data.total is number
-          && request.resource.data.score is number;
-        allow update, delete: if false;
+        allow create, update, delete: if false;
       }
 
       match /examSessions/{examId} {

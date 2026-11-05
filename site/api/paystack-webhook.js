@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { activateFromPayment } = require('./_lib/paymentAccess');
+const { PLANS } = require('./_lib/subscriptionPlans');
 
 function send(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body));
@@ -34,9 +35,10 @@ module.exports = async (req, res) => {
       String(payment.status || '').toLowerCase() !== 'success' ||
       String(payment.currency || '').toUpperCase() !== 'NGN' ||
       !Number.isFinite(Number(payment.amount)) ||
-      Number(payment.amount) !== 100000 ||
-      (payment.requested_amount != null && Number(payment.requested_amount) !== 100000) ||
-      String(payment.metadata?.plan || '').toLowerCase() !== 'monthly' ||
+      !PLANS[String(payment.metadata?.planId || '')] ||
+      Number(payment.amount) !== PLANS[String(payment.metadata?.planId || '')].amount ||
+      (payment.requested_amount != null && Number(payment.requested_amount) !== PLANS[String(payment.metadata?.planId || '')].amount) ||
+      String(payment.metadata?.plan || '').toLowerCase() !== 'credit_subscription' ||
       !payment.metadata?.uid ||
       !payment.reference
     ) {

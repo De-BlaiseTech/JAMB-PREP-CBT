@@ -19,6 +19,17 @@ function render(data){
  subjectBox.innerHTML=Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])).map(([s,a])=>{const p=Math.round(a.reduce((x,y)=>x+y,0)/a.length);return `<div class="breakdown-row"><div class="breakdown-head"><span>${esc(s)}</span><strong>${p}%</strong></div><div class="progress-bar"><i style="width:${Math.max(0,Math.min(100,p))}%"></i></div></div>`}).join('')||'<div class="empty">Complete a test to see your performance.</div>';
 }
 render(localResults());
+
+(async()=>{
+ try{
+  const access=await import('./access.js');
+  const state=await access.getMockAccess();
+  const balance=$('creditBalance'), status=$('creditStatus');
+  if(balance) balance.textContent=Number(state.credits||0).toLocaleString();
+  if(status) status.textContent=state.freePracticeAvailable?'Your one-time free mock is available. After that, each mock costs 100 credits at start.':state.credits>=100?'Each new 60-question mock costs 100 credits, deducted when you start.':'Your free mock has been used. You need 100 credits to start another mock.';
+ }catch(e){if($('creditStatus'))$('creditStatus').textContent='Unable to load your practice credit balance.';}
+})();
+
 (async()=>{
   try{
     const fb=await import('./firebase-bridge.js');

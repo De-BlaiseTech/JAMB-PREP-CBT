@@ -1,5 +1,6 @@
 const { requireUser } = require('./_lib/firebaseAdmin');
 const { activateFromPayment } = require('./_lib/paymentAccess');
+const { PLANS } = require('./_lib/subscriptionPlans');
 
 function send(res, status, body) {
   res.status(status)
@@ -48,33 +49,21 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Customer charges are disabled in Paystack. The customer must therefore
-    // pay exactly the configured product amount. Never accept a higher gross
-    // amount as a valid payment for this product.
-    const expectedAmount = 100000; // ₦1,000 in kobo
+    const plan = PLANS[String(payment.metadata?.planId || '')];
     const chargedAmount = Number(payment.amount);
     const requestedAmount = Number(payment.requested_amount ?? payment.amount);
-
-    if (
-      !Number.isFinite(chargedAmount) ||
-      chargedAmount !== expectedAmount ||
-      (payment.requested_amount != null && requestedAmount !== expectedAmount)
-    ) {
-      return send(res, 400, {
-        error: 'Payment amount could not be confirmed.',
-        reference
-      });
+    if (!plan || chargedAmount !== plan.amount || (payment.requested_amount != null && requestedAmount !== plan.amount)) {
+      return send(res, 400, { error: 'Payment amount could not be confirmed.', reference });
     }
-
-    if (payment.metadata?.plan !== 'monthly') {
-      return send(res, 400, { error: 'The payment plan could not be confirmed.' });
+    if (payment.metadata?.plan !== 'credit_subscription') {
+      return send(res, 400, { error: 'The subscription package could not be confirmed.' });
     }
 
     const result = await activateFromPayment(payment);
 
     return send(res, 200, {
       success: true,
-      expiresAt: result.expiresAt,
+      creditsAdded: result.credits,
       alreadyProcessed: result.alreadyProcessed
     });
   } catch (e) {
