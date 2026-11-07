@@ -1,5 +1,5 @@
-const { db, getAdmin, nowMs } = require('./_lib/firebaseAdmin');
-const { tokenHash } = require('./_lib/registrationCrypto');
+const { db, getAdmin, nowMs } = require('../_lib/firebaseAdmin');
+const { tokenHash } = require('../_lib/registrationCrypto');
 
 function send(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body));

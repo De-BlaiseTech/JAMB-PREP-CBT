@@ -1,6 +1,6 @@
-const { requireUser } = require('./_lib/firebaseAdmin');
-const { activateFromPayment } = require('./_lib/paymentAccess');
-const { PLANS } = require('./_lib/subscriptionPlans');
+const { requireUser } = require('../_lib/firebaseAdmin');
+const { activateFromPayment } = require('../_lib/paymentAccess');
+const { PLANS } = require('../_lib/subscriptionPlans');
 
 function send(res, status, body) {
   res.status(status)

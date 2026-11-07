@@ -1,7 +1,7 @@
 const crypto = require('crypto');
-const { db, getAdmin, nowMs } = require('./_lib/firebaseAdmin');
-const { encrypt, emailId, tokenHash } = require('./_lib/registrationCrypto');
-const { sendVerificationEmail } = require('./_lib/sendVerificationEmail');
+const { db, getAdmin, nowMs } = require('../_lib/firebaseAdmin');
+const { encrypt, emailId, tokenHash } = require('../_lib/registrationCrypto');
+const { sendVerificationEmail } = require('../_lib/sendVerificationEmail');
 
 function send(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body));

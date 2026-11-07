@@ -1,7 +1,7 @@
 const crypto = require('crypto');
-const { db, getAdmin, nowMs } = require('./_lib/firebaseAdmin');
-const { tokenHash } = require('./_lib/registrationCrypto');
-const { sendPasswordResetEmail } = require('./_lib/sendPasswordResetEmail');
+const { db, getAdmin, nowMs } = require('../_lib/firebaseAdmin');
+const { tokenHash } = require('../_lib/registrationCrypto');
+const { sendPasswordResetEmail } = require('../_lib/sendPasswordResetEmail');
 
 const APP_URL = 'https://jambcbt.de-blaisetechnologies.com.ng';
 const COOLDOWN_MS = 60 * 1000;

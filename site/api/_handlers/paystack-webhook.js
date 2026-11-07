@@ -1,6 +1,6 @@
 const crypto = require('crypto');
-const { activateFromPayment } = require('./_lib/paymentAccess');
-const { PLANS } = require('./_lib/subscriptionPlans');
+const { activateFromPayment } = require('../_lib/paymentAccess');
+const { PLANS } = require('../_lib/subscriptionPlans');
 
 function send(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body));

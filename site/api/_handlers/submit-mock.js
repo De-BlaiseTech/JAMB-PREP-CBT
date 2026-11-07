@@ -1,4 +1,4 @@
-const { requireUser, db } = require('./_lib/firebaseAdmin');
+const { requireUser, db } = require('../_lib/firebaseAdmin');
 function send(res, status, body) { res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body)); }
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'Method not allowed.' });

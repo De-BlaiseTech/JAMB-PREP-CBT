@@ -1,5 +1,5 @@
-const { db, getAdmin, nowMs } = require('./_lib/firebaseAdmin');
-const { decrypt, emailId, tokenHash } = require('./_lib/registrationCrypto');
+const { db, getAdmin, nowMs } = require('../_lib/firebaseAdmin');
+const { decrypt, emailId, tokenHash } = require('../_lib/registrationCrypto');
 
 function html(res, status, title, message, buttonText = 'Continue to Login') {
   const safe = s => String(s).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));

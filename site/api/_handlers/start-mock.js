@@ -1,4 +1,4 @@
-const { requireUser, db } = require('./_lib/firebaseAdmin');
+const { requireUser, db } = require('../_lib/firebaseAdmin');
 function send(res, status, body) { res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body)); }
 const MOCK_CREDITS = 100;
 const FREE_TRIAL_CUTOFF = Date.parse('2026-11-05T09:06:00.000Z');

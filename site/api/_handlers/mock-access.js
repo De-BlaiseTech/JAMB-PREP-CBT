@@ -1,4 +1,4 @@
-const { requireUser, db, nowMs } = require('./_lib/firebaseAdmin');
+const { requireUser, db, nowMs } = require('../_lib/firebaseAdmin');
 function send(res, status, body) { res.status(status).setHeader('Content-Type', 'application/json').send(JSON.stringify(body)); }
 const MOCK_CREDITS = 100;
 // Accounts created from this release onward receive one free first mock.
