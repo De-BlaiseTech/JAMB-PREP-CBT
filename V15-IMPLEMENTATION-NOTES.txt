@@ -1,0 +1,10 @@
+V15 deployment compatibility update
+
+- Consolidated the 13 public API endpoints behind one Vercel Serverless Function at site/api/index.js.
+- Added site/vercel.json rewrites so existing /api/<endpoint> URLs continue to work.
+- Moved the original endpoint implementations into site/api/_handlers/ and updated their relative helper imports. The underscore-prefixed folder is kept out of Vercel's function route discovery; only api/index.js is a deployable function.
+- Preserved the original endpoint handler logic and shared helper files.
+- Pinned the Node.js engine to 24.x.
+
+The Vercel project Root Directory should remain set to "site" (the folder containing package.json, api/, and vercel.json).
+After deployment, test registration/email verification, password reset, Paystack initialize/verify/webhook, mock access/start/submit, and the config-check endpoint.

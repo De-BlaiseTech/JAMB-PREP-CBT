@@ -46,6 +46,12 @@ $('login').onclick=async()=>{
       setBusy(button,false);
       return msg('Please verify your email address before signing in. If you have not received the link, return to registration and use Resend Verification Link.','error');
     }
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/admin?action=access', {headers:{Authorization:`Bearer ${token}`}});
+      const access = await response.json().catch(()=>({}));
+      if (response.ok && access.isAdmin === true) { location.replace('admin.html'); return; }
+    } catch (_) {}
     localStorage.setItem('jambUser',JSON.stringify({email:user.email,name:user.displayName||email.split('@')[0],uid:user.uid}));
     location.href='dashboard.html';
   }catch(e){setBusy(button,false);msg(friendlyError(e),'error')}

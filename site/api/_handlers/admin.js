@@ -21,6 +21,7 @@ module.exports=async(req,res)=>{
   if(!adminAllowed(token)) return send(res,403,{error:'Administrator access is required.'});
   const action=clean(req.query?.action||req.body?.action,40);
   const store=db();
+  if(req.method==='GET' && action==='access') return send(res,200,{isAdmin:true});
   if(req.method==='GET' && action==='questions'){
    const snap=await store.collection('questions').orderBy('subject').limit(500).get();
    return send(res,200,{questions:snap.docs.map(d=>({id:d.id,...d.data()}))});
@@ -33,6 +34,15 @@ module.exports=async(req,res)=>{
     return {uid:d.id,name:x.name||'',email:x.email||'',regNo:x.regNo||'',role:x.role||'student',createdAt:x.createdAt||'',subscriptionCredits:Number(x.subscriptionCredits||0),subscriptionStatus:x.subscriptionStatus||'free',freePracticeUsed:x.freePracticeUsed===true,testsCompleted:results.data().count||0,mocksStarted:starts.data().count||0};
    }));
    return send(res,200,{students});
+  }
+  if(req.method==='POST' && action==='bulk-save-questions'){
+   const items=req.body?.questions;
+   if(!Array.isArray(items)||!items.length) return send(res,400,{error:'Provide at least one question.'});
+   if(items.length>450) return send(res,400,{error:'A maximum of 450 questions can be imported per batch.'});
+   const batch=store.batch(), now=new Date().toISOString();
+   for(const item of items){const data=validateQuestion(item||{});const ref=store.collection('questions').doc();batch.set(ref,{...data,createdAt:now,updatedAt:now});}
+   await batch.commit();
+   return send(res,200,{success:true,saved:items.length});
   }
   if(req.method==='POST' && action==='save-question'){
    const data=validateQuestion(req.body||{});
