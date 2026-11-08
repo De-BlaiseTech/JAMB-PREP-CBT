@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jamb-prep-cbt-v15-credit-subscriptions';
+const CACHE_NAME = 'jamb-prep-cbt-v16-admin-dashboard';
 const APP_SHELL = [
   './',
   './index.html',

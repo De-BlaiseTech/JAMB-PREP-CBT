@@ -3,6 +3,7 @@
 // Single Vercel Serverless Function router.
 // The public /api/<name> URLs are preserved by vercel.json rewrites.
 const routes = Object.freeze({
+  'admin': require('./_handlers/admin'),
   'config-check': require('./_handlers/config-check'),
   'forgot-password': require('./_handlers/forgot-password'),
   'mock-access': require('./_handlers/mock-access'),
