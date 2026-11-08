@@ -6,9 +6,9 @@ if(bootNotice) bootNotice.textContent='Connecting securely to your administrator
 let questions=[],students=[],user=null;
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 function note(t,type='info'){ $('notice').textContent=t; $('notice').className=`status-msg ${type}`; if(bootNotice) bootNotice.textContent=type==='error'?'Administrator tools could not finish loading. See the message below.':'Administrator dashboard is ready.'; }
-async function api(action,{method='GET',body=null,id=''}={}){
+async function api(action,{method='GET',body=null,id='',cursor=''}={}){
  const token=await user.getIdToken();
- const url=new URL('/api/admin',location.origin);url.searchParams.set('action',action);if(id)url.searchParams.set('id',id);
+ const url=new URL('/api/admin',location.origin);url.searchParams.set('action',action);if(id)url.searchParams.set('id',id);if(cursor)url.searchParams.set('cursor',cursor);
  const r=await fetch(url,{method,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
  const d=await r.json().catch(()=>({}));
  if(!r.ok)throw new Error(d.error||'Admin request failed.');return d;
@@ -26,7 +26,20 @@ function renderStudents(){
  $('attemptCount').textContent=students.reduce((n,s)=>n+s.testsCompleted,0);
  $('studentRows').innerHTML=list.map(s=>`<tr><td style="padding:12px 6px"><b>${esc(s.name||'Student')}</b><br><small>${esc(s.email)}</small></td><td>${esc(s.regNo||'—')}</td><td>${s.createdAt&&Date.parse(s.createdAt)?new Date(s.createdAt).toLocaleDateString():'—'}</td><td align="right">${s.subscriptionCredits.toLocaleString()}</td><td align="right">${s.testsCompleted}</td><td>${esc(s.subscriptionStatus)}</td></tr>`).join('')||'<tr><td colspan="6">No students found.</td></tr>';
 }
-async function loadQuestions(){const d=await api('questions');questions=d.questions||[];renderQuestions();}
+async function loadQuestions(){
+ questions=[];renderQuestions();
+ let cursor='';let pages=0;
+ do{
+  const d=await api('questions',{cursor});
+  // The cursor is sent as a query parameter by the API helper below.
+  questions.push(...(d.questions||[]));
+  cursor=d.nextCursor||'';pages++;
+  $('questionCount').textContent=questions.length;
+  $('questionList').innerHTML=`<div class="empty">Loading question bank… ${questions.length.toLocaleString()} loaded</div>`;
+  if(pages>100)throw new Error('Question bank is unusually large. Refresh and contact support.');
+ }while(cursor);
+ renderQuestions();
+}
 async function loadStudents(){const d=await api('students');students=d.students||[];renderStudents();}
 function reset(){ $('questionForm').reset();$('questionId').value='';$('active').checked=true;$('formTitle').textContent='Add a Question';$('saveQuestion').textContent='Save Question';}
 function edit(id){const q=questions.find(x=>x.id===id);if(!q)return;$('questionId').value=q.id;$('subject').value=q.subject;$('topic').value=q.topic||'';$('question').value=q.question;(q.options||[]).forEach((v,i)=>$(`opt${i}`).value=v);$('answer').value=String(q.answer);$('explanation').value=q.explanation||'';$('active').checked=q.active!==false;$('formTitle').textContent='Edit Question';$('saveQuestion').textContent='Update Question';window.scrollTo({top:0,behavior:'smooth'});}

@@ -1,0 +1,11 @@
+ADMIN QUESTION LIST FIX
+
+The admin question list previously fetched only the first 500 documents and used orderBy('subject'), which could also omit question documents that did not contain a subject field.
+
+This update:
+- Loads the question bank in pages of 500 until every question document has been retrieved.
+- Uses Firestore document ID ordering so questions with missing subject fields are not omitted from the admin list.
+- Shows a loading count while additional pages are being fetched.
+- Keeps the existing add, edit, delete, search, bulk import and student features.
+
+No database migration is required. Deploy the full project ZIP to Vercel.
