@@ -1,9 +1,11 @@
 import { auth } from './firebase.js';
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 const $=id=>document.getElementById(id);
+const bootNotice=$('adminBootNotice');
+if(bootNotice) bootNotice.textContent='Connecting securely to your administrator account…';
 let questions=[],students=[],user=null;
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-function note(t,type='info'){ $('notice').textContent=t; $('notice').className=`status-msg ${type}`; }
+function note(t,type='info'){ $('notice').textContent=t; $('notice').className=`status-msg ${type}`; if(bootNotice) bootNotice.textContent=type==='error'?'Administrator tools could not finish loading. See the message below.':'Administrator dashboard is ready.'; }
 async function api(action,{method='GET',body=null,id=''}={}){
  const token=await user.getIdToken();
  const url=new URL('/api/admin',location.origin);url.searchParams.set('action',action);if(id)url.searchParams.set('id',id);
@@ -32,4 +34,4 @@ $('questionForm').addEventListener('submit',async e=>{e.preventDefault();const b
 $('questionList').addEventListener('click',async e=>{const editId=e.target.dataset.edit,deleteId=e.target.dataset.delete;if(editId)edit(editId);if(deleteId&&confirm('Permanently delete this question? This cannot be undone.')){try{await api('delete-question',{method:'DELETE',id:deleteId});note('Question deleted.','success');await loadQuestions();}catch(err){note(err.message,'error')}}});
 $('resetForm').onclick=reset;$('refreshQuestions').onclick=()=>loadQuestions().catch(e=>note(e.message,'error'));$('refreshStudents').onclick=()=>loadStudents().catch(e=>note(e.message,'error'));$('questionSearch').oninput=renderQuestions;$('studentSearch').oninput=renderStudents;
 $('logout').onclick=async()=>{await signOut(auth);location.replace('index.html')};
-onAuthStateChanged(auth,async u=>{if(!u){location.replace('index.html');return}user=u;try{await Promise.all([loadQuestions(),loadStudents()]);note(`Signed in as ${u.email||'administrator'}.`,'success');}catch(e){note(e.message,'error');if(/administrator access/i.test(e.message)){$('questionForm').hidden=true;}}});
+onAuthStateChanged(auth,async u=>{if(!u){if(bootNotice)bootNotice.textContent='Please sign in with your administrator account first. You will be redirected to the sign-in page.';location.replace('index.html');return}user=u;try{await Promise.all([loadQuestions(),loadStudents()]);note(`Signed in as ${u.email||'administrator'}.`,'success');}catch(e){note(e.message,'error');if(/administrator access/i.test(e.message)){$('questionForm').hidden=true;}}});
